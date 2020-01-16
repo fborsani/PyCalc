@@ -35,7 +35,7 @@ clone the repository and execute `python [path to folder]/PyCalc/__init__.py` to
 
 |setting | description| example
 |---|---|---
-| MS | the most significant bit indicates the sign, while the other N-1 bits are used to represent the number| `00010 = 2 0010 = -2`
+| MS | the most significant bit indicates the sign, while the other N-1 bits are used to represent the number| `00010 = 2 1010 = -2`
 | C1 | the most significant bit indicates the sign, to obtain the negative of a number all bits are inverted| `00010 = 2 11101 = -2`
 | C2 | the most significant bit indicates the sign, to obtain the negative of a number all bits are inverted and one is added to the result| `00010 = 2 11110 = -2`
 
