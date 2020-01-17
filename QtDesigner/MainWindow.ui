@@ -413,25 +413,10 @@
      <string>Tools</string>
     </property>
     <addaction name="MenuAddFunction"/>
-    <addaction name="MenuCalcOffset"/>
     <addaction name="MenuCalcString"/>
     <addaction name="MenuColorPicker"/>
    </widget>
-   <widget class="QMenu" name="menusettings">
-    <property name="title">
-     <string>Settings</string>
-    </property>
-    <widget class="QMenu" name="menuSetTheme">
-     <property name="title">
-      <string>Set theme</string>
-     </property>
-     <addaction name="SetClassic"/>
-     <addaction name="SetDark"/>
-    </widget>
-    <addaction name="menuSetTheme"/>
-   </widget>
    <addaction name="menuFile"/>
-   <addaction name="menusettings"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="MenuAddFunction">
@@ -439,7 +424,7 @@
     <string>Add custom function...</string>
    </property>
   </action>
-  <action name="MenuCalcOffset">
+  <action name="action">
    <property name="text">
     <string>Offset calculator...</string>
    </property>
