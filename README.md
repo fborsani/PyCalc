@@ -8,7 +8,7 @@ This calculator has support for arithmetic, scientific and logical operations. I
 ## How to install:
 
 Before installing make sure to have the latest version of PyQt installed on your system.
-clone the repository and execute `python [path to folder]/PyCalc/__init__.py` to run the application. It comes with all the needed external packages so no extra steps are required.
+clone the repository and execute `python [path to folder]/PyCalc` to run the application. It comes with all the needed external packages so no extra steps are required.
 
 ## How does it work?
 
