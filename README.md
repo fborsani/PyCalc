@@ -8,7 +8,7 @@ This calculator has support for arithmetic, scientific and logical operations. I
 ## How to install:
 
 Before installing make sure to have the latest version of PyQt installed on your system.
-clone the repository and execute `python [path to folder]/PyCalc/__init__.py` to run the application. It comes with all the needed external packages so no extra steps are required.
+clone the repository and execute `python [path to folder]/PyCalc` to run the application. It comes with all the needed external packages so no extra steps are required.
 
 ## How does it work?
 
@@ -21,7 +21,7 @@ clone the repository and execute `python [path to folder]/PyCalc/__init__.py` to
 * By default when operating in `Integer` memory mode floating values are truncated to allow binary representation. If you need decimal numbers in your result set the memory to `Float` or `Double`.
 * When using binary, octal or hexadecimal formats the inserted byte sequence is automatically padded according to the size of the selected memory format. This means that if if your most significant bit is a 1 the number will be interpreted as a negative decimal number.
 * Converting any numeric format to `Oct` requires the memory to be compatible with three bits words system: `Oct Half-Word (6 bits) Oct Word (12 bits) Oct Double Word (24 bits) Oct triple Word (36 bits)`
-* Signed memory means it means half of the possible bit combinations will be used to represent negative numbers for instance on 8 bits the maximum and minimum number will be +127 and -127 while if the memory is set to unsigned the max number will be 256 and the min 0.
+* Signed memory means it means half of the possible bit combinations will be used to represent negative numbers for instance on 8 bits the maximum and minimum number will be +127 and -127 while if the memory is set to unsigned the max number will be 255 and the min 0.
 
 **Endianness settings:**
 
