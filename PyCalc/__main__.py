@@ -1,12 +1,12 @@
-from PyCalc.gui.mainWindow import Ui_MainWindow
-from PyCalc.gui.inputSettings import Ui_DialogInputSettings
-from PyCalc.gui.userFunction import Ui_AddFunctionForm
-from PyCalc.gui.stringManager import Ui_StringManager
+from gui.mainWindow import Ui_MainWindow
+from gui.inputSettings import Ui_DialogInputSettings
+from gui.userFunction import Ui_AddFunctionForm
+from gui.stringManager import Ui_StringManager
 
-from PyCalc.formatModule import *
-from PyCalc.calculator import *
-from PyCalc.colorPicker import *
-from PyCalc.stringUtilities import *
+from formatModule import *
+from calculator import *
+from colorPicker import *
+from stringUtilities import *
 
 from PyQt5.QtWidgets import *
 
@@ -200,7 +200,7 @@ class UserFunctions(QtWidgets.QDialog):
             raise Exception("Base functions cannot be overwritten")
         if symbol in expr:
             raise Exception("Function's symbol cannot be used in its own body")
-        if len(varsList) > 0:
+        if varsList:
             if any(not var.isalnum() or var.isdigit() for var in varsList):
                 raise Exception("Function arguments must be alphanumeric and contain at least one letter")
             if symbol in varsList:
@@ -228,11 +228,12 @@ class UserFunctions(QtWidgets.QDialog):
         funcArgsStr = ""
         funcArgsList = self.opReference[symbol]["args"]
 
-        for i in range(0, len(funcArgsList), 1):
-            if i + 1 < len(funcArgsList):
-                funcArgsStr += funcArgsList[i] + " "
-            else:
-                funcArgsStr += funcArgsList[i]
+        if funcArgsList:
+            for i in range(0, len(funcArgsList), 1):
+                if i + 1 < len(funcArgsList):
+                    funcArgsStr += funcArgsList[i] + " "
+                else:
+                    funcArgsStr += funcArgsList[i]
 
         self.ui.TextSymbol.setText(symbol)
         self.ui.TextVars.setText(funcArgsStr)
@@ -243,7 +244,7 @@ class UserFunctions(QtWidgets.QDialog):
         if self.ui.TextVars.text() != "":
             argList = self.ui.TextVars.text().lower().strip().split(" ")
         else:
-            argList = []
+            argList = None
         expr = self.ui.TextExpr.text().lower()
 
         try:

@@ -1,5 +1,5 @@
 from enum import Enum
-from PyCalc.bitstring import BitArray
+from bitstring import BitArray
 from sys import byteorder
 
 class DataType(Enum):
@@ -26,6 +26,13 @@ class Endian(Enum):
     LITTLE = "le"
     NATIVE = "ne"
     NONBYTE = ""
+
+class FormatterInterface:
+    def getFormattedArray(self, bArr, signed):
+        pass
+
+    def getInt(self, bArr, signed):
+        pass
 
 def C2toC1(bArr, signed):
     binStr = bArr.bin
@@ -104,7 +111,7 @@ def MStoInt(bArr, signed):
 class BinFormat(Enum):
     MS = {"toC2": MStoC2, "fromC2": C2toMS, "toInt": MStoInt}
     C1 = {"toC2": C1toC2, "fromC2": C2toC1, "toInt": C1toInt}
-    C2 = {"toC2": None, "fromC2": None, "toInt": None} #not supposed to be used, raises errors
+    C2 = 2
 
 def binBaseSwitcher(bArr, baseIn, baseOut, endian, signed):
     if baseIn == baseOut:
