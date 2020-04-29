@@ -200,7 +200,7 @@ class UserFunctions(QtWidgets.QDialog):
             raise Exception("Base functions cannot be overwritten")
         if symbol in expr:
             raise Exception("Function's symbol cannot be used in its own body")
-        if varsList:
+        if varsList and varsList != "":
             if any(not var.isalnum() or var.isdigit() for var in varsList):
                 raise Exception("Function arguments must be alphanumeric and contain at least one letter")
             if symbol in varsList:
@@ -263,13 +263,15 @@ class UserFunctions(QtWidgets.QDialog):
         self.updateFunctions()
 
     def replaceFunction(self):
-        symbolOld = self.ui.ListOperations.selectedItems()[0].text()
-
-        symbol = self.ui.TextSymbol.text()
-        argList = self.ui.TextVars.text().split(" ")
-        expr = self.ui.TextExpr.text()
-
         try:
+            if self.ui.ListOperations.selectedItems()[0] is None:
+                raise Exception("No item selected")
+
+            symbolOld = self.ui.ListOperations.selectedItems()[0].text()
+
+            symbol = self.ui.TextSymbol.text()
+            argList = self.ui.TextVars.text().split(" ")
+            expr = self.ui.TextExpr.text()
             self.sanitizeInput(symbol, expr, argList)
 
             funcDict = {"userDef": True, "pri": Priority.HIGH, "args": argList, "ltAssoc": False, "calc": expr}
@@ -328,8 +330,11 @@ class StringManager(QtWidgets.QDialog):
         self.ui.TextIn.setText(text)
         file.close()
 
-    def writeFile(self):
-        file = open(self.pathOut, "w")
+    def writeFile(self, append=bool):
+        if append:
+            file = open(self.pathOut, "a")
+        else:
+            file = open(self.pathOut, "w")
         file.write(self.ui.TextOut.toPlainText())
         file.close()
 
@@ -346,10 +351,9 @@ class StringManager(QtWidgets.QDialog):
             textOut = bytesIn.decode(encodingOut, "replace")
             self.ui.TextOut.setText(textOut)
             if self.ui.CheckWriteToFile.isChecked():
-                self.writeFile()
+                self.writeFile(self.ui.OptAppend.isChecked())
         except Exception as e:
             self.ui.TextOut.setText(str(e))
-
 
 def main():
     app = QtWidgets.QApplication(sys.argv)

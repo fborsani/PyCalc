@@ -16,23 +16,16 @@ class DataType(Enum):
     TWORDO = {"byteBased": False, "size": 36, "id": "int"}
 
 class NumBase(Enum):
-    DEC = {"base": 10, "mod": None, "prefix": "", "chars": "0123456789.-e"}  # supposed to raise errors if used in wrong places
-    OCT = {"base": 8, "mod": 3, "prefix": "0o", "chars": "01234567"}
-    HEX = {"base": 16, "mod": 4, "prefix": "0x", "chars": "0123456789abcdef"}
-    BIN = {"base": 2, "mod": 1, "prefix": "0b", "chars": "01"}
+    DEC = {"base": 10, "mod": None, "prefix": "", "chars": "0123456789.-e", "reqSpace": False}  # supposed to raise errors if used in wrong places
+    OCT = {"base": 8, "mod": 3, "prefix": "0o", "chars": "01234567", "reqSpace": True}
+    HEX = {"base": 16, "mod": 4, "prefix": "0x", "chars": "0123456789abcdef", "reqSpace": True}
+    BIN = {"base": 2, "mod": 1, "prefix": "0b", "chars": "01", "reqSpace": True}
 
 class Endian(Enum):
     BIG = "be"
     LITTLE = "le"
     NATIVE = "ne"
     NONBYTE = ""
-
-class FormatterInterface:
-    def getFormattedArray(self, bArr, signed):
-        pass
-
-    def getInt(self, bArr, signed):
-        pass
 
 def C2toC1(bArr, signed):
     binStr = bArr.bin
@@ -162,6 +155,9 @@ class Converter:
         else:
             return Endian.LITTLE
 
+    def isSeparatorRequired(self):
+        return self.baseIn.value["reqSpace"]
+
     def isNum(self, string):
         for c in string:
             if c not in self.baseIn.value["chars"]:
@@ -263,17 +259,21 @@ class Converter:
             return None
 
     def applyFormatting(self, val):
-        bArr = self.getDecBitArray(val, self.endianIn, self.signedIn, self.binFormatIn)  # init with IN parameters
-        valOut = self.__toInt(bArr, self.endianOut, self.signedOut, self.binFormatIn)  # get int with OUT parameters but keep binFormat
+        try:
+            bArr = self.getDecBitArray(val, self.endianIn, self.signedIn, self.binFormatIn)  # init with IN parameters
+            valOut = self.__toInt(bArr, self.endianOut, self.signedOut, self.binFormatIn)  # get int with OUT parameters but keep binFormat
 
-        if self.baseOut == NumBase.DEC:
-            return valOut
-        else:
-            bArr = self.getDecBitArray(valOut, self.endianIn, self.signedIn, self.binFormatIn)  # get BitArray from int
-            bArrOut = binBaseSwitcher(bArr, self.binFormatIn, self.binFormatOut, self.endianOut, self.signedOut)  # apply OUT params to BitArray
-            if self.baseOut == NumBase.BIN:
-                return bArrOut.bin
-            if self.baseOut == NumBase.HEX:
-                return bArrOut.hex
-            if self.baseOut == NumBase.OCT:
-                return bArrOut.oct
+            if self.baseOut == NumBase.DEC:
+                return valOut
+            else:
+                bArr = self.getDecBitArray(valOut, self.endianIn, self.signedIn, self.binFormatIn)  # get BitArray from int
+                bArrOut = binBaseSwitcher(bArr, self.binFormatIn, self.binFormatOut, self.endianOut, self.signedOut)  # apply OUT params to BitArray
+                if self.baseOut == NumBase.BIN:
+                    return bArrOut.bin
+                if self.baseOut == NumBase.HEX:
+                    return bArrOut.hex
+                if self.baseOut == NumBase.OCT:
+                    return bArrOut.oct
+        except Exception as e:
+            self.error = str(e)
+            return None

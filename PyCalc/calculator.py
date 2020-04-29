@@ -1,7 +1,7 @@
 from enum import Enum
 from collections import deque
+import numpy as np
 import math
-
 
 class Priority(Enum):
     LOW = 0
@@ -12,7 +12,7 @@ class Priority(Enum):
 operations = {
     "+": {"userDef": False, "pri": Priority.LOW, "args": 2, "ltAssoc": False, "calc": lambda args: args[1] + args[0]},
     "-": {"userDef": False, "pri": Priority.LOW, "args": 2, "ltAssoc": False, "calc": lambda args: args[1] - args[0]},
-    "_": {"userDef": False, "pri": Priority.HIGH, "args": 1, "ltAssoc": True, "calc": lambda args: -args[0]},
+    "_": {"userDef": False, "pri": Priority.HIGH, "args": 1, "ltAssoc": False, "calc": lambda args: -args[0]},
     "*": {"userDef": False, "pri": Priority.MED, "args": 2, "ltAssoc": False, "calc": lambda args: args[1] * args[0]},
     "/": {"userDef": False, "pri": Priority.MED, "args": 2, "ltAssoc": False, "calc": lambda args: args[1] / args[0]},
     "%": {"userDef": False, "pri": Priority.MED, "args": 2, "ltAssoc": False, "calc": lambda args: args[1] % args[0]},
@@ -56,38 +56,31 @@ class Calculator:
         self.error = None
 
     def addSpaces(self, expr):
-        exprOut = ""
-
+        items = []
+        tmpString = ""
         for i in range(0, len(expr), 1):
-            if expr[i] in operations.keys():
-                if expr[i] == "-":
-                    # check num on the right and operation or start on the left
-                    if (expr[i+1] != "-" and self.converter.isNum(expr[i+1]) and i - 1 < 0 or
-                            expr[i + 1] != "-" and self.converter.isNum(expr[i+1]) and expr[i-1] in operations.keys()):
-                        exprOut += expr[i]
-                    else:
-                        if i - 1 >= 0:  # avoid adding spaces in first position
-                            exprOut += " "
-                        exprOut += "_ "
-                elif operations[expr[i]]["userDef"] and len(operations[expr[i]]["args"]) == 0:
-                    exprOut += expr[i]  # check for used defined constant
-                else:
-                    if operations[expr[i]]["args"] != 0:
-                        exprOut += " " + expr[i] + " "  # if function has zero args is a const
-                    else:
-                        exprOut += expr[i]  # don't add spaces around constants so they behave like numbers
-            elif expr[i] == "(":
-                if i > 0 and expr[i-1].isalpha():
-                    exprOut += " "  # insert additional space between function and bracket cos(x) --> cos ( x )
-                exprOut += "( "
-            elif expr[i] == ")":
-                exprOut += " )"
-            elif expr[i] == ",":  # commas are like spaces to separate function arguments
-                exprOut += " "
-            else:
-                exprOut += expr[i]
+            if expr[i] == "-":
+                if tmpString != "":
+                    items.append(tmpString)
+                    tmpString = ""
 
-        return exprOut
+                if i - 1 >= 0 and (self.converter.isNum(expr[i + 1]) or expr[i + 1] == "(") and (
+                            (self.converter.isNum(expr[i - 1]) and expr[i - 1] != "-") or expr[i - 1] == ")"):
+                    items.append(expr[i])
+                else:
+                    items.append("_")
+            elif self.converter.isNum(expr[i]) or expr[i].isalpha():
+                tmpString += expr[i]
+            else:
+                if tmpString != "":
+                    items.append(tmpString)
+                    tmpString = ""
+                if not(expr[i] == "," or expr[i] == " "):
+                    items.append(expr[i])
+
+        if tmpString != "":
+            items.append(tmpString)
+        return items
 
     def rpnFormat(self, expr):
         if expr == "":
@@ -96,7 +89,7 @@ class Calculator:
 
         output = list()
         operators = deque()
-        exprToken = self.addSpaces(expr).split(" ")
+        exprToken = self.addSpaces(expr)
 
         for t in exprToken:
             if t in operations:
@@ -149,17 +142,16 @@ class Calculator:
             elif t in operations:
                 if operations[t]["userDef"]:
                     newExp = operations[t]["calc"]
-
-                    if len(stack) >= len(operations[t]["args"]):
-                        for arg in operations[t]["args"]:
-                            currVal = stack.pop()
-                            newExp = newExp.replace(arg, str(currVal))
-
-                        result = self.solve(newExp)  # recursive step
-                        stack.append(str(result))
-                    else:
-                        self.error = "insufficient number of arguments"
-
+                    if operations[t]["args"] is not None:
+                        if len(stack) >= len(operations[t]["args"]):
+                            for arg in operations[t]["args"]:
+                                currVal = stack.pop()
+                                newExp = newExp.replace(arg, str(currVal))
+                        else:
+                            self.error = "insufficient number of arguments"
+                            return None
+                    result = np.double(self.solve(newExp))  # recursive step
+                    stack.append(result)
                 else:
                     args = []
 
@@ -167,13 +159,18 @@ class Calculator:
 
                         for _ in range(0, operations[t]["args"], 1):
                             args.append(stack.pop())
-
-                        result = operations[t]["calc"](args)
-                        stack.append(result)
+                        try:
+                            result = operations[t]["calc"](args)
+                            stack.append(str(result))
+                        except Exception as e:
+                            self.error = str(e)
+                            return None
                     else:
                         self.error = "insufficient number of arguments"
+                        return None
             else:
                 self.error = "Unrecognized symbol: "+str(t)
+                return None
 
         res = self.converter.applyFormatting(stack.pop())  # last result in stack is final
 
