@@ -13,13 +13,13 @@ class DataType(Enum):
     HWORDO = {"byteBased": False, "size": 6, "id": "int"}
     WORDO = {"byteBased": False, "size": 12, "id": "int"}
     DWORDO = {"byteBased": False, "size": 24, "id": "int"}
-    TWORDO = {"byteBased": False, "size": 36, "id": "int"}
+    QWORDO = {"byteBased": False, "size": 48, "id": "int"}
 
 class NumBase(Enum):
-    DEC = {"base": 10, "mod": None, "prefix": "", "chars": "0123456789.-e", "reqSpace": False}  # supposed to raise errors if used in wrong places
-    OCT = {"base": 8, "mod": 3, "prefix": "0o", "chars": "01234567", "reqSpace": True}
-    HEX = {"base": 16, "mod": 4, "prefix": "0x", "chars": "0123456789abcdef", "reqSpace": True}
-    BIN = {"base": 2, "mod": 1, "prefix": "0b", "chars": "01", "reqSpace": True}
+    DEC = {"base": 10, "mod": None, "prefix": "", "chars": "0123456789.-e"}  # supposed to raise errors if used in wrong places
+    OCT = {"base": 8, "mod": 3, "prefix": "0o", "chars": "01234567"}
+    HEX = {"base": 16, "mod": 4, "prefix": "0x", "chars": "0123456789abcdef"}
+    BIN = {"base": 2, "mod": 1, "prefix": "0b", "chars": "01"}
 
 class Endian(Enum):
     BIG = "be"
@@ -104,7 +104,7 @@ def MStoInt(bArr, signed):
 class BinFormat(Enum):
     MS = {"toC2": MStoC2, "fromC2": C2toMS, "toInt": MStoInt}
     C1 = {"toC2": C1toC2, "fromC2": C2toC1, "toInt": C1toInt}
-    C2 = 2
+    C2 = None
 
 def binBaseSwitcher(bArr, baseIn, baseOut, endian, signed):
     if baseIn == baseOut:
@@ -126,27 +126,21 @@ def binBaseSwitcher(bArr, baseIn, baseOut, endian, signed):
     return bArr
 
 class Converter:
-    def __init__(self, dictArgs):
+    def __init__(self, baseIn, baseOut, binFormat, memSize, endianness, signed):
         self.error = None
-        self.mem = dictArgs["out"]["mem"]
-        self.baseIn = dictArgs["in"]["base"]
-        self.binFormatIn = dictArgs["in"]["binFormat"]
-        self.signedIn = dictArgs["in"]["signed"]
-
-        self.baseOut = dictArgs["out"]["base"]
-        self.binFormatOut = dictArgs["out"]["binFormat"]
-        self.signedOut = dictArgs["out"]["signed"]
-
+        self.mem = memSize
+        self.baseIn = baseIn
+        self.baseOut = baseOut
+        self.binFormat = binFormat
+        self.signed = signed
+        
         if self.mem.value["byteBased"]:
-            self.endianIn = dictArgs["in"]["endian"]
-            self.endianOut = dictArgs["out"]["endian"]
-
-            if self.endianIn == Endian.NATIVE: self.endianIn = self.getNativeEndianness()
-            if self.endianOut == Endian.NATIVE: self.endianOut = self.getNativeEndianness()
-
+            if endianness == Endian.NATIVE:
+                self.endian = self.getNativeEndianness()
+            else:
+                self.endian = endianness
         else:
-            self.endianIn = Endian.NONBYTE
-            self.endianOut = Endian.NONBYTE
+            self.endian = Endian.NONBYTEE
 
     @staticmethod
     def getNativeEndianness():
@@ -154,9 +148,6 @@ class Converter:
             return Endian.BIG
         else:
             return Endian.LITTLE
-
-    def isSeparatorRequired(self):
-        return self.baseIn.value["reqSpace"]
 
     def isNum(self, string):
         for c in string:
@@ -227,9 +218,7 @@ class Converter:
 
         binData = bArr.bin
 
-        if binFormat == BinFormat.C2:
-            bArr = BitArray(NumBase.BIN.value["prefix"] + binData[0] * (self.mem.value["size"] - binSize) + binData)
-        elif binFormat == BinFormat.C1:
+        if binFormat == BinFormat.C2 or binFormat == BinFormat.C1:
             bArr = BitArray(NumBase.BIN.value["prefix"] + binData[0] * (self.mem.value["size"] - binSize) + binData)
         elif binFormat == BinFormat.MS:
             sign = binData[0]
@@ -249,31 +238,27 @@ class Converter:
     def toInt(self, val):
         try:
             if self.baseIn == NumBase.DEC:
-                bArr = self.getDecBitArray(val, self.endianIn, self.signedIn, self.binFormatIn)
+                bArr = self.getDecBitArray(val, self.endian, self.signed, self.binFormat)
             else:
-                bArr = self.getBinBitArray(val, self.endianIn, self.baseIn, self.binFormatIn)
+                bArr = self.getBinBitArray(val, self.endian, self.baseIn, self.binFormat)
 
-            return self.__toInt(bArr, self.endianIn, self.signedIn, self.binFormatIn)
+            return self.__toInt(bArr, self.endian, self.signed, self.binFormat)
         except Exception as e:
             self.error = str(e)
             return None
 
     def applyFormatting(self, val):
         try:
-            bArr = self.getDecBitArray(val, self.endianIn, self.signedIn, self.binFormatIn)  # init with IN parameters
-            valOut = self.__toInt(bArr, self.endianOut, self.signedOut, self.binFormatIn)  # get int with OUT parameters but keep binFormat
-
+            bArr = self.getDecBitArray(val, self.endian, self.signed, self.binFormat)  # init with IN parameters
             if self.baseOut == NumBase.DEC:
-                return valOut
+                return self.__toInt(bArr, self.endian, self.signed, self.binFormat)
             else:
-                bArr = self.getDecBitArray(valOut, self.endianIn, self.signedIn, self.binFormatIn)  # get BitArray from int
-                bArrOut = binBaseSwitcher(bArr, self.binFormatIn, self.binFormatOut, self.endianOut, self.signedOut)  # apply OUT params to BitArray
                 if self.baseOut == NumBase.BIN:
-                    return bArrOut.bin
+                    return bArr.bin
                 if self.baseOut == NumBase.HEX:
-                    return bArrOut.hex
+                    return bArr.hex
                 if self.baseOut == NumBase.OCT:
-                    return bArrOut.oct
+                    return bArr.oct
         except Exception as e:
             self.error = str(e)
             return None

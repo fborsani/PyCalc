@@ -1,12 +1,12 @@
 import base64
 import zlib
 import binascii
-import uu
 import quopri
-from encodings import idna
 import locale
 
 listOfTextEncodings = (
+    "locale",
+    "AoB",
     "ascii",
     "big5",
     "big5hkscs",
@@ -107,14 +107,17 @@ listOfTextEncodings = (
     "utf_8_sig"
 )
 
-listOfBitOperations = (
-    "base64",
-    "hex",
-    "quopri",
-    "uu",
-    "gzip"
-    "idna"
-)
+bitOperations = {
+    "None": {"encode": lambda s: s, "decode": lambda s: s},
+    "Ascii85": {"encode": lambda s: base64.a85encode(s), "decode": lambda s: base64.a85decode(s)},
+    "Base16": {"encode": lambda s: base64.b16encode(s), "decode": lambda s: base64.b16decode(s)},
+    "Base32": {"encode": lambda s: base64.b32encode(s), "decode": lambda s: base64.b32decode(s)},
+    "Base64": {"encode": lambda s: base64.b64encode(s), "decode": lambda s: base64.b64decode(s)},
+    "Base85": {"encode": lambda s: base64.b85encode(s), "decode": lambda s: base64.b85decode(s)},
+    "GZip": {"encode": lambda s: zlib.compress(s), "decode": lambda s: zlib.decompress(s)},
+    "Quopri": {"encode": lambda s: quopri.encodestring(s), "decode": lambda s: quopri.decodestring(s)},
+    "U Encoding": {"encode": lambda s: binascii.b2a_uu(s), "decode": lambda s: binascii.a2b_uu(s)}
+}
 
 def textEncodingBeautifier(idx: int):
     strOut = listOfTextEncodings[idx].replace("_", " ")
@@ -124,58 +127,26 @@ def getEncoding(string):
     label = string.replace(" ", "_")
     return label
 
-def toHex(string, encoding):
-    if encoding == "hex":
-        return binascii.a2b_hex(string)
-    if encoding == "base64":
-        return binascii.a2b_base64(string)
-    if encoding == "quopri":
-        return binascii.a2b_qp(string)
+def convert(strIn: str, codeIn: str, codeOut: str, opIn: str = "None", opOut: str = "None", err: str = "replace"):
+    strIn = bitOperations[opIn]["decode"](strIn)
 
-def fromHex(byteStr, encoding):
-    if encoding == "hex":
-        return binascii.b2a_hex(byteStr)
-    if encoding == "base64":
-        return binascii.b2a_base64(byteStr)
-    if encoding == "quopri":
-        return binascii.b2a_qp(byteStr)
+    if codeIn == "locale":
+        vCodeIn = locale.getlocale()[1]
+    else:
+        vCodeIn = codeIn
 
-def gzipCompress(string, level: int = 9):
-    return zlib.compress(string, level)
+    if codeOut == "locale":
+        vCodeOut = locale.getlocale()[1]
+    else:
+        vCodeOut = codeOut
 
-def gzipDecompress(string):
-    return zlib.decompress(string)
+    if codeIn == "AoB":
+        bytesIn = bytearray.fromhex(strIn)
+    else:
+        bytesIn = strIn.encode(vCodeIn, err)
 
-def base64Encode(string):
-    b64Bytes = toHex(string, "base64")
-    return base64.b64encode(b64Bytes)
-
-def base64Decode(b64String):
-    b64Bytes = base64.b64decode(b64String)
-    return fromHex(b64Bytes, "base64")
-
-def uuEncode(fileIn, fileOut, name: str, mode: str, backtick: bool):
-    uu.encode(fileIn, fileOut, name=name, mode=mode, backtick=backtick)
-
-def uuDecode(fileIn, fileOut, mode):
-    uu.encode(fileIn, fileOut, mode=mode)
-
-def quopriEncode(string, quotetabs: bool = False, header: bool = False):
-    qpBytes = toHex(string, "quopri")
-    return quopri.encodestring(qpBytes, quotetabs, header)
-
-def quopriDecode(qpString, header=False):
-    qpBytes = quopri.decodestring(qpString)
-    return fromHex(qpBytes, "quopri")
-
-def toIdnaLabel(string):
-    return idna.nameprep(string)
-
-def fromIdnaLabel(string, encoding):
-    if encoding == "ascii":
-        return idna.ToASCII(string)
-    if encoding == "unicode":
-        return idna.ToUnicode(string)
-
-
-
+    if vCodeOut == "AoB":
+        strOut = str(bytesIn.hex())
+    else:
+        strOut = bytesIn.decode(vCodeOut, err)
+    return bitOperations[opOut]["encode"](strOut)

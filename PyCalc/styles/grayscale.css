@@ -1,0 +1,23 @@
+QWidget{
+	background-color: darkslategray;
+	color: lightgray
+}
+
+QMenu::item:selected, QListWidget::item:selected:active, QMenuBar::item:selected{ 
+    background-color: darkgray;
+	color: black;
+}
+
+QLineEdit, QListWidget, QTextEdit{
+	border: 1px solid black;
+	background-color: dimgray;
+}
+
+QComboBox{
+	selection-background-color: darkgray;
+selection-color: black;
+}
+
+Line{
+	color: dimgray;
+}

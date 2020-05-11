@@ -161,7 +161,7 @@ class Calculator:
                             args.append(stack.pop())
                         try:
                             result = operations[t]["calc"](args)
-                            stack.append(str(result))
+                            stack.append(result)
                         except Exception as e:
                             self.error = str(e)
                             return None
