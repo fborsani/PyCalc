@@ -1,35 +1,39 @@
 from gui.mainWindow import Ui_MainWindow
-from gui.inputSettings import Ui_DialogInputSettings
 from gui.userFunction import Ui_AddFunctionForm
 from gui.stringManager import Ui_StringManager
 
-from formatModule import *
-from calculator import *
-from colorPicker import *
-from stringUtilities import *
+import formatModule as fm
+import calculator as calc
+import stringUtilities as su
 
 from PyQt5.QtWidgets import *
+from colorPicker import *
 
 import sys
+import glob
 
-associatedSettings = {
-    "Dec": NumBase.DEC,
-    "Oct": NumBase.OCT,
-    "Hex": NumBase.HEX,
-    "Bin": NumBase.BIN,
-    "Integer": DataType.INT,
-    "Float": DataType.FLOAT,
-    "Double": DataType.DOUBLE,
-    "Byte (8 bits)": DataType.BYTE,
-    "Word (16 bits)": DataType.WORD,
-    "Double Word (32 bits)": DataType.DWORD,
-    "Quad Word (64 bits)": DataType.QWORD,
-    "Oct Half Word (6 bits)": DataType.HWORDO,
-    "Oct Word (12 bits)": DataType.WORDO,
-    "Oct Double Word (24 bits)": DataType.DWORDO,
-    "Oct Triple Word (36 bits)": DataType.TWORDO,
+dictMem = {
+    "Integer": fm.DataType.INT,
+    "Float": fm.DataType.FLOAT,
+    "Double": fm.DataType.DOUBLE,
+    "Byte (8 bits)": fm.DataType.BYTE,
+    "Word (16 bits)": fm.DataType.WORD,
+    "Double Word (32 bits)": fm.DataType.DWORD,
+    "Quad Word (64 bits)": fm.DataType.QWORD,
+    "Oct Half Word (6 bits)": fm.DataType.HWORDO,
+    "Oct Word (12 bits)": fm.DataType.WORDO,
+    "Oct Double Word (24 bits)": fm.DataType.DWORDO,
+    "Oct Quad Word (48 bits)": fm.DataType.QWORDO,
 }
 
+dictBase = {
+    "Dec": fm.NumBase.DEC,
+    "Oct": fm.NumBase.OCT,
+    "Hex": fm.NumBase.HEX,
+    "Bin": fm.NumBase.BIN
+}
+
+dictStyles = {}
 class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self, parent=None):
@@ -37,7 +41,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        self.optionsDialog = InputSettings(self)
         self.userFunctions = UserFunctions(self)
         self.stringManager = StringManager(self)
         self.colorPicker = QColorEdit(parent=self)
@@ -45,54 +48,57 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.ui.OKButton.clicked.connect(self.calc)
         self.ui.OldOperationsList.clicked.connect(self.fetchOldOperation)
-        self.ui.InputSettingsButton.clicked.connect(lambda: self.optionsDialog.show())
         self.ui.MenuAddFunction.triggered.connect(lambda: self.userFunctions.show())
         self.ui.MenuCalcString.triggered.connect(lambda: self.stringManager.show())
         self.ui.MenuColorPicker.triggered.connect(lambda: self.colorPicker.show())
 
-    def collectArgs(self):
-        dictArgs = {}
+        self.__initLists()
 
+    def __initLists(self):
+        for i in dictMem.keys():
+            self.ui.MemSizeSelector.addItem(i)
+
+        for i in dictBase.keys():
+            self.ui.BaseInSelector.addItem(i)
+            self.ui.BaseOutSelector.addItem(i)
+
+        for file in glob.glob("./styles/*.css"):
+            text = file[file.rfind("/")+1:file.rfind(".")]
+            dictStyles[text] = file
+            action = self.ui.menuThemes.addAction(text)
+            action.triggered.connect(lambda: self.__applyStyle(action.text()))
+
+    def __applyStyle(self, name):
+        with open(dictStyles[name], "r") as f:
+            self.setStyleSheet(f.read())
+            f.close()
+
+    def __createConverter(self):
         if self.ui.EndianBig.isChecked():
-            endian = Endian.BIG
+            endian = fm.Endian.BIG
         elif self.ui.EndianLittle.isChecked():
-            endian = Endian.LITTLE
+            endian = fm.Endian.LITTLE
         else:
-            endian = Endian.NATIVE
+            endian = fm.Endian.NATIVE
 
         if self.ui.FormatC1.isChecked():
-            binFormat = BinFormat.C1
+            binFormat = fm.BinFormat.C1
         elif self.ui.FormatMS.isChecked():
-            binFormat = BinFormat.MS
+            binFormat = fm.BinFormat.MS
         else:
-            binFormat = BinFormat.C2
+            binFormat = fm.BinFormat.C2
 
-        dictArgs["base"] = associatedSettings[self.ui.BaseOutSelector.currentText()]
-        dictArgs["signed"] = self.ui.CheckSigned.isChecked()
-        dictArgs["mem"] = associatedSettings[self.ui.MemSizeSelector.currentText()]
-        dictArgs["endian"] = endian
-        dictArgs["binFormat"] = binFormat
+        baseIn = dictBase[self.ui.BaseInSelector.currentText()]
+        baseOut = dictBase[self.ui.BaseOutSelector.currentText()]
+        memSize = dictMem[self.ui.MemSizeSelector.currentText()]
+        signed = self.ui.CheckSigned.isChecked()
 
-        return dictArgs
-
-    def createConverter(self):
-        dictOut = self.collectArgs()
-        dictIn = self.optionsDialog.collectArgs()
-
-        #  fill the fields that are supposed to be the same
-        dictIn["base"] = associatedSettings[self.ui.BaseInSelector.currentText()]
-        if dictIn["signed"] is None: dictIn["signed"] = dictOut["signed"]
-        if dictIn["endian"] is None: dictIn["endian"] = dictOut["endian"]
-        if dictIn["binFormat"] is None: dictIn["binFormat"] = dictOut["binFormat"]
-
-        argsDict = {"out": dictOut, "in": dictIn}
-
-        return Converter(argsDict)
+        return fm.Converter(baseIn, baseOut, binFormat, memSize, endian, signed)
 
     def calc(self):
         expr = self.ui.TextInput.text()
-        converter = self.createConverter()
-        c = Calculator(converter)
+        converter = self.__createConverter()
+        c = calc.Calculator(converter)
         res = c.solve(expr)
         if res:
             self.ui.TextResult.setText(res)
@@ -105,86 +111,13 @@ class MainWindow(QtWidgets.QMainWindow):
         picked = self.ui.OldOperationsList.selectedItems()
         self.ui.TextInput.setText(picked[0].text())
 
-class InputSettings(QtWidgets.QDialog):
-    def __init__(self, parent=None):
-        super(InputSettings, self).__init__(parent)
-        self.ui = Ui_DialogInputSettings()
-        self.ui.setupUi(self)
-
-        self.ui.BinFormatFollowOutput.clicked.connect(self.manageBinFormatSettings)
-        self.ui.EndiannessFollowOutput.clicked.connect(self.manageEndiannessSettings)
-        self.ui.SignFollowOutput.clicked.connect(self.manageSignSettings)
-        self.ui.buttonBox.accepted.connect(self.onAccepted)
-        self.ui.buttonBox.rejected.connect(self.onRejected)
-
-    def collectArgs(self):
-        dictArgs = {}
-
-        if self.ui.EndiannessFollowOutput.isChecked():
-            endian = None
-        elif self.ui.EndianBig.isChecked():
-            endian = Endian.BIG
-        elif self.ui.EndianLittle.isChecked():
-            endian = Endian.LITTLE
-        else:
-            endian = Endian.NATIVE
-
-        if self.ui.BinFormatFollowOutput.isChecked():
-            binFormat = None
-        elif self.ui.FormatC1.isChecked():
-            binFormat = BinFormat.C1
-        elif self.ui.FormatMS.isChecked():
-            binFormat = BinFormat.MS
-        else:
-            binFormat = BinFormat.C2
-
-        if self.ui.SignFollowOutput.isChecked():
-            checked = None
-        else:
-            checked = self.ui.SignYes.isChecked()
-
-        dictArgs["base"] = None  # to be set by the mainwindow since the comboBox is there
-        dictArgs["signed"] = checked
-        dictArgs["endian"] = endian
-        dictArgs["binFormat"] = binFormat
-
-        return dictArgs
-
-    def manageBinFormatSettings(self):
-        self.ui.FormatC1.setEnabled(not self.ui.BinFormatFollowOutput.isChecked())
-        self.ui.FormatC2.setEnabled(not self.ui.BinFormatFollowOutput.isChecked())
-        self.ui.FormatMS.setEnabled(not self.ui.BinFormatFollowOutput.isChecked())
-
-    def manageEndiannessSettings(self):
-        self.ui.EndianLittle.setEnabled(not self.ui.EndiannessFollowOutput.isChecked())
-        self.ui.EndianBig.setEnabled(not self.ui.EndiannessFollowOutput.isChecked())
-        self.ui.EndianNative.setEnabled(not self.ui.EndiannessFollowOutput.isChecked())
-
-    def manageSignSettings(self):
-        self.ui.SignYes.setEnabled(not self.ui.SignFollowOutput.isChecked())
-        self.ui.SignNo.setEnabled(not self.ui.SignFollowOutput.isChecked())
-
-    def onAccepted(self):
-        self.close()
-
-    def onRejected(self):
-        self.ui.EndiannessFollowOutput.setChecked(True)
-        self.ui.BinFormatFollowOutput.setChecked(True)
-        self.ui.SignFollowOutput.setChecked(True)
-
-        # call the functions manually to disable radio buttons
-        self.manageEndiannessSettings()
-        self.manageBinFormatSettings()
-        self.manageSignSettings()
-        self.close()
-
 class UserFunctions(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super(UserFunctions, self).__init__(parent)
         self.ui = Ui_AddFunctionForm()
         self.ui.setupUi(self)
 
-        self.opReference = operations
+        self.opReference = calc.operations
         self.ui.ButtonAdd.clicked.connect(self.addFunction)
         self.ui.ButtonDel.clicked.connect(self.delFunction)
         self.ui.ButtonEdit.clicked.connect(self.replaceFunction)
@@ -196,7 +129,7 @@ class UserFunctions(QtWidgets.QDialog):
             raise Exception("Missing function symbol")
         if not expr or expr == "":
             raise Exception("Missing function body")
-        if any(op == symbol and not operations[op]["userDef"] for op in operations.keys()):
+        if any(op == symbol and not calc.operations[op]["userDef"] for op in calc.operations.keys()):
             raise Exception("Base functions cannot be overwritten")
         if symbol in expr:
             raise Exception("Function's symbol cannot be used in its own body")
@@ -250,7 +183,7 @@ class UserFunctions(QtWidgets.QDialog):
         try:
             self.sanitizeInput(symbol, expr, argList)
 
-            funcDict = {"userDef": True, "pri": Priority.HIGH, "args": argList, "ltAssoc": False, "calc": expr}
+            funcDict = {"userDef": True, "pri": calc.Priority.HIGH, "args": argList, "ltAssoc": False, "calc": expr}
 
             self.opReference[symbol] = funcDict
             self.updateFunctions()
@@ -274,7 +207,7 @@ class UserFunctions(QtWidgets.QDialog):
             expr = self.ui.TextExpr.text()
             self.sanitizeInput(symbol, expr, argList)
 
-            funcDict = {"userDef": True, "pri": Priority.HIGH, "args": argList, "ltAssoc": False, "calc": expr}
+            funcDict = {"userDef": True, "pri": calc.Priority.HIGH, "args": argList, "ltAssoc": False, "calc": expr}
 
             if symbol != symbolOld:
                 del self.opReference[symbolOld]
@@ -307,9 +240,9 @@ class StringManager(QtWidgets.QDialog):
         self.pathOut = None
 
     def __initEncodingList(self):
-        for i in range(0, len(listOfTextEncodings), 1):
-            self.ui.FormatBoxInput.addItem(textEncodingBeautifier(i))
-            self.ui.FormatBoxOutput.addItem(textEncodingBeautifier(i))
+        for i in range(0, len(su.listOfTextEncodings), 1):
+            self.ui.FormatBoxInput.addItem(su.textEncodingBeautifier(i))
+            self.ui.FormatBoxOutput.addItem(su.textEncodingBeautifier(i))
 
     def __connectAndShowDialog(self, field):
         self.fileDialog.accepted.connect(lambda: self.__getSelectedFile(field))
@@ -340,15 +273,14 @@ class StringManager(QtWidgets.QDialog):
 
     def convert(self):
         try:
-            encodingIn = getEncoding(self.ui.FormatBoxInput.currentText())
-            encodingOut = getEncoding(self.ui.FormatBoxOutput.currentText())
+            encodingIn = su.getEncoding(self.ui.FormatBoxInput.currentText())
+            encodingOut = su.getEncoding(self.ui.FormatBoxOutput.currentText())
 
             if self.ui.CheckReadFromFile.isChecked():
                 self.readFile()
 
             text = self.ui.TextIn.toPlainText()
-            bytesIn = text.encode(encodingIn, "replace")
-            textOut = bytesIn.decode(encodingOut, "replace")
+            textOut = su.convert(text, encodingIn, encodingOut)
             self.ui.TextOut.setText(textOut)
             if self.ui.CheckWriteToFile.isChecked():
                 self.writeFile(self.ui.OptAppend.isChecked())

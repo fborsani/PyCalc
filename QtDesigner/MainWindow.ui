@@ -58,26 +58,6 @@
         <property name="layoutDirection">
          <enum>Qt::LeftToRight</enum>
         </property>
-        <item>
-         <property name="text">
-          <string>Dec</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Oct</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Hex</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Bin</string>
-         </property>
-        </item>
        </widget>
       </item>
       <item>
@@ -88,61 +68,6 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
-        <item>
-         <property name="text">
-          <string>Integer</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Float</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Double</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Byte (8 bits)</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Word (16 bits)</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Double Word (32 bits)</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Quad Word (64 bits)</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Oct Half Word (6 bits)</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Oct Word (12 bits)</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Oct Double Word (24 bits)</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Oct Triple Word (36 bits)</string>
-         </property>
-        </item>
        </widget>
       </item>
       <item>
@@ -346,13 +271,6 @@
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout_3">
       <item>
-       <widget class="QToolButton" name="InputSettingsButton">
-        <property name="text">
-         <string>...</string>
-        </property>
-       </widget>
-      </item>
-      <item>
        <widget class="QComboBox" name="BaseInSelector">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -363,26 +281,6 @@
         <property name="layoutDirection">
          <enum>Qt::LeftToRight</enum>
         </property>
-        <item>
-         <property name="text">
-          <string>Dec</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Oct</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Hex</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Bin</string>
-         </property>
-        </item>
        </widget>
       </item>
       <item>
@@ -416,7 +314,13 @@
     <addaction name="MenuCalcString"/>
     <addaction name="MenuColorPicker"/>
    </widget>
+   <widget class="QMenu" name="menuThemes">
+    <property name="title">
+     <string>Themes</string>
+    </property>
+   </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuThemes"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="MenuAddFunction">
@@ -453,7 +357,7 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="GroupEndianness"/>
   <buttongroup name="GroupBinFormat"/>
+  <buttongroup name="GroupEndianness"/>
  </buttongroups>
 </ui>
