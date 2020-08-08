@@ -1,6 +1,8 @@
-from enum import Enum
-from bitstring import BitArray
 from sys import byteorder
+
+from bitstring import BitArray, CreationError, InterpretError
+from enum import Enum
+
 
 class DataType(Enum):
     INT = {"byteBased": True, "size": 32, "id": "int"}
@@ -106,24 +108,10 @@ class BinFormat(Enum):
     C1 = {"toC2": C1toC2, "fromC2": C2toC1, "toInt": C1toInt}
     C2 = None
 
-def binBaseSwitcher(bArr, baseIn, baseOut, endian, signed):
-    if baseIn == baseOut:
-        return bArr
-
-    if endian == Endian.LITTLE:
-        bArr.byteswap()
-
-    if baseIn == BinFormat.C2:
-        bArr = baseOut.value["fromC2"](bArr, signed)
-    elif baseOut == BinFormat.C2:
-        bArr = baseIn.value["toC2"](bArr, signed)
-    else:
-        bArr = baseOut.value["fromC2"](baseIn.value["toC2"](bArr, signed), signed)
-
-    if endian == Endian.LITTLE:
-        bArr.byteswap()
-
-    return bArr
+class ConvertionException(Exception):
+    def __init__(self, msg):
+        self.msg = msg
+        super().__init__(msg)
 
 class Converter:
     def __init__(self, baseIn, baseOut, binFormat, memSize, endianness, signed):
@@ -140,7 +128,7 @@ class Converter:
             else:
                 self.endian = endianness
         else:
-            self.endian = Endian.NONBYTEE
+            self.endian = Endian.NONBYTE
 
     @staticmethod
     def getNativeEndianness():
@@ -148,6 +136,26 @@ class Converter:
             return Endian.BIG
         else:
             return Endian.LITTLE
+
+    @staticmethod
+    def binBaseSwitcher(bArr, baseIn, baseOut, endian, signed):
+        if baseIn == baseOut:
+            return bArr
+
+        if endian == Endian.LITTLE:
+            bArr.byteswap()
+
+        if baseIn == BinFormat.C2:
+            bArr = baseOut.value["fromC2"](bArr, signed)
+        elif baseOut == BinFormat.C2:
+            bArr = baseIn.value["toC2"](bArr, signed)
+        else:
+            bArr = baseOut.value["fromC2"](baseIn.value["toC2"](bArr, signed), signed)
+
+        if endian == Endian.LITTLE:
+            bArr.byteswap()
+
+        return bArr
 
     def isNum(self, string):
         for c in string:
@@ -163,9 +171,9 @@ class Converter:
                         if endian == Endian.BIG: return bArr.floatbe
                         if endian == Endian.LITTLE: return bArr.floatle
                     else:
-                        raise Exception("Unsigned format is not supported for floating point numbers")
+                        raise ConvertionException("Unsigned format is not supported for floating point numbers")
                 else:
-                    raise Exception("C1 and MS formats are not supported for floating point numbers")
+                    raise ConvertionException("C1 and MS formats are not supported for floating point numbers")
             else:
                 if binFormat == BinFormat.C2:
                     if signed:
@@ -180,9 +188,10 @@ class Converter:
                     if endian == Endian.LITTLE:
                         bArr.byteswap()
                     return binFormat.value["toInt"](bArr, signed)
-        except Exception as e:
-            self.error = str(e)
-            return None
+        except ConvertionException:
+            raise
+        except CreationError as e:
+            raise ConvertionException(e.msg)
 
     def getDecBitArray(self, val, endian, signed, binFormat):
         # [u]int[ne|be|le]:[8|16|32|64]=12
@@ -196,44 +205,49 @@ class Converter:
                 if val[0] == "-":
                     val = val[1:]
                 strSign = "u"
-
-        if binFormat == BinFormat.C2:
-            return BitArray(strSign + self.mem.value["id"] + endian.value + ":" + str(self.mem.value["size"]) + "=" + str(val))
-        else:
-            if binFormat == BinFormat.C1:
-                bArr = BitArray(strSign+self.mem.value["id"]+endian.value+":"+str(self.mem.value["size"])+"="+str(val))
+        try:
+            if binFormat == BinFormat.C2:
+                return BitArray(strSign + self.mem.value["id"] + endian.value + ":" + str(self.mem.value["size"]) + "=" + str(val))
             else:
-                bArr = BitArray(strSign+self.mem.value["id"]+":"+str(self.mem.value["size"] - 1)+"="+str(val))
+                if binFormat == BinFormat.C1:
+                    bArr = BitArray(strSign+self.mem.value["id"]+endian.value+":"+str(self.mem.value["size"])+"="+str(val))
+                else:
+                    bArr = BitArray(strSign+self.mem.value["id"]+":"+str(self.mem.value["size"] - 1)+"="+str(val))
 
-            return binBaseSwitcher(bArr, BinFormat.C2, binFormat, endian, signed)
+                return self.binBaseSwitcher(bArr, BinFormat.C2, binFormat, endian, signed)
+        except CreationError as e:
+            raise ConvertionException(str(e))
 
     def getBinBitArray(self, val, endian, numBase, binFormat):
         # [0b|0x|0o]1234
-        val = str(val)
-        binSize = numBase.value["mod"]*len(val)
-        bArr = BitArray(numBase.value["prefix"]+val)
+        try:
+            val = str(val)
+            binSize = numBase.value["mod"]*len(val)
+            bArr = BitArray(numBase.value["prefix"]+val)
 
-        if endian == Endian.LITTLE:
-            bArr.byteswap()
-
-        binData = bArr.bin
-
-        if binFormat == BinFormat.C2 or binFormat == BinFormat.C1:
-            bArr = BitArray(NumBase.BIN.value["prefix"] + binData[0] * (self.mem.value["size"] - binSize) + binData)
-        elif binFormat == BinFormat.MS:
-            sign = binData[0]
-            binSize += 1
-            bArr = BitArray(bin=binData[1:])
-            bArr.invert()
+            if endian == Endian.LITTLE:
+                bArr.byteswap()
 
             binData = bArr.bin
 
-            bArr = BitArray(NumBase.BIN.value["prefix"] + sign + binData[0] * (self.mem.value["size"] - binSize) + binData)
+            if binFormat == BinFormat.C2 or binFormat == BinFormat.C1:
+                bArr = BitArray(NumBase.BIN.value["prefix"] + binData[0] * (self.mem.value["size"] - binSize) + binData)
+            elif binFormat == BinFormat.MS:
+                sign = binData[0]
+                binSize += 1
+                bArr = BitArray(bin=binData[1:])
+                bArr.invert()
 
-        if endian == Endian.LITTLE:
-            bArr.byteswap()
+                binData = bArr.bin
 
-        return bArr
+                bArr = BitArray(NumBase.BIN.value["prefix"] + sign + binData[0] * (self.mem.value["size"] - binSize) + binData)
+
+            if endian == Endian.LITTLE:
+                bArr.byteswap()
+
+            return bArr
+        except CreationError as e:
+            raise ConvertionException(str(e))
 
     def toInt(self, val):
         try:
@@ -243,9 +257,8 @@ class Converter:
                 bArr = self.getBinBitArray(val, self.endian, self.baseIn, self.binFormat)
 
             return self.__toInt(bArr, self.endian, self.signed, self.binFormat)
-        except Exception as e:
-            self.error = str(e)
-            return None
+        except ConvertionException as e:
+            raise
 
     def applyFormatting(self, val):
         try:
@@ -259,6 +272,8 @@ class Converter:
                     return bArr.hex
                 if self.baseOut == NumBase.OCT:
                     return bArr.oct
-        except Exception as e:
-            self.error = str(e)
-            return None
+        except ConvertionException as e:
+            raise
+        except InterpretError as e:
+            raise ConvertionException("Use OCT mem size to convert to octal num format")
+

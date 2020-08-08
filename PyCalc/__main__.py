@@ -1,16 +1,18 @@
-from gui.mainWindow import Ui_MainWindow
-from gui.userFunction import Ui_AddFunctionForm
-from gui.stringManager import Ui_StringManager
-
-import formatModule as fm
-import calculator as calc
-import stringUtilities as su
+import os
+import sys
 
 from PyQt5.QtWidgets import *
-from colorPicker import *
 
-import sys
-import glob
+import PyCalc.calculator as calc
+import PyCalc.formatModule as fm
+import PyCalc.stringUtilities as su
+from PyCalc.colorPicker import *
+from PyCalc.gui.mainWindow import Ui_MainWindow
+from PyCalc.gui.stringManager import Ui_StringManager
+from PyCalc.gui.userFunction import Ui_AddFunctionForm
+
+STYLEDIR = "./styles/"
+
 
 dictMem = {
     "Integer": fm.DataType.INT,
@@ -62,11 +64,12 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.BaseInSelector.addItem(i)
             self.ui.BaseOutSelector.addItem(i)
 
-        for file in glob.glob("./styles/*.css"):
-            text = file[file.rfind("/")+1:file.rfind(".")]
-            dictStyles[text] = file
-            action = self.ui.menuThemes.addAction(text)
-            action.triggered.connect(lambda: self.__applyStyle(action.text()))
+        for file in os.scandir(STYLEDIR):
+            if file.is_file() and file.name.endswith(".css"):
+                text = file.name[:file.name.rfind(".css")]
+                dictStyles[text] = file
+                action = self.ui.menuThemes.addAction(text)
+                action.triggered.connect(lambda: self.__applyStyle(action.text()))
 
     def __applyStyle(self, name):
         with open(dictStyles[name], "r") as f:
@@ -99,13 +102,19 @@ class MainWindow(QtWidgets.QMainWindow):
         expr = self.ui.TextInput.text()
         converter = self.__createConverter()
         c = calc.Calculator(converter)
-        res = c.solve(expr)
-        if res:
+        try:
+            res = c.solve(expr)
             self.ui.TextResult.setText(res)
             if not any(self.ui.OldOperationsList.item(i).text() == expr for i in range(0, self.ui.OldOperationsList.count(), 1)):
                 self.ui.OldOperationsList.addItem(expr)
-        else:
-            self.ui.TextResult.setText(c.error)
+        except calc.ConvertionException as e:
+            self.ui.TextResult.setText("Conversion error: "+e.msg)
+        except calc.ParseException as e:
+            self.ui.TextResult.setText("Parse error: "+e.msg)
+        except ArithmeticError as e:
+            self.ui.TextResult.setText("Math error: "+str(e))
+        except RecursionError:
+            self.ui.TextResult.setText("Recursion depth excedeed, check custom functions for loops")
 
     def fetchOldOperation(self):
         picked = self.ui.OldOperationsList.selectedItems()

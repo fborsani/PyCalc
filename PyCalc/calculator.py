@@ -1,7 +1,11 @@
-from enum import Enum
-from collections import deque
-import numpy as np
 import math
+from collections import deque
+
+import numpy as np
+from enum import Enum
+
+from PyCalc.formatModule import Converter, ConvertionException
+
 
 class Priority(Enum):
     LOW = 0
@@ -50,10 +54,14 @@ other user defined operations will be injected too
 """
 
 
+class ParseException(Exception):
+    def __init__(self, msg):
+        self.msg = msg
+        super().__init__(msg)
+
 class Calculator:
-    def __init__(self, converter):
+    def __init__(self, converter: Converter):
         self.converter = converter
-        self.error = None
 
     def addSpaces(self, expr):
         items = []
@@ -83,99 +91,97 @@ class Calculator:
         return items
 
     def rpnFormat(self, expr):
-        if expr == "":
-            self.error = "Empty string"
-            return None
+        try:
+            if expr == "":
+                raise ParseException("Empty string")
 
-        output = list()
-        operators = deque()
-        exprToken = self.addSpaces(expr)
+            output = list()
+            operators = deque()
+            exprToken = self.addSpaces(expr)
 
-        for t in exprToken:
-            if t in operations:
-                while (operators and operators[-1] != '(' and
-                       operations[operators[-1]]["pri"].value >= operations[t]["pri"].value):
-                    output.append(operators.pop())
+            for t in exprToken:
+                if t in operations:
+                    while (operators and operators[-1] != '(' and
+                           operations[operators[-1]]["pri"].value >= operations[t]["pri"].value):
+                        output.append(operators.pop())
 
-                operators.append(t)
-            elif t == '(':
-                operators.append(t)
-            elif t == ')':
-                while operators and operators[-1] != '(':
-                    output.append(operators.pop())
+                    operators.append(t)
+                elif t == '(':
+                    operators.append(t)
+                elif t == ')':
+                    while operators and operators[-1] != '(':
+                        output.append(operators.pop())
 
-                if not operators:
-                    self.error = "Mismatched parenthesis"
-                    return None
+                    if not operators:
+                        raise ParseException("Mismatched brackets")
 
-                operators.pop()  # pop last open parenthesis
-            elif self.converter.isNum(t):
-                out = self.converter.toInt(t)
-                if out is not None:
+                    operators.pop()  # pop last open parenthesis
+                elif self.converter.isNum(t):
+                    out = self.converter.toInt(t)
                     output.append(out)
                 else:
-                    self.error = self.converter.error
-                    return None
-            else:
-                self.error = "Symbol "+str(t)+" could not be resolved as operation or number"
-                return None
+                    raise ParseException("Symbol "+str(t)+" could not be resolved as operation or number")
 
-        for i in range(-1, -len(operators) - 1, -1):
-            if operators[i] == '(':
-                self.error = "Mismatched parenthesis"
-                return None
-            output.append(operators[i])
+            for i in range(-1, -len(operators) - 1, -1):
+                if operators[i] == '(':
+                    raise ParseException("Mismatched parenthesis")
+                output.append(operators[i])
 
-        return output
+            return output
+        except ParseException:
+            raise
+        except ConvertionException:
+            raise
 
     def solve(self, expr):
-        exprSanitized = expr.lower().strip()    # all chars are defaulted to lower case even ones in hex numbers
-        tokenList = self.rpnFormat(exprSanitized)
-        stack = []
+        try:
+            exprSanitized = expr.lower().strip()    # all chars are defaulted to lower case even ones in hex numbers
+            tokenList = self.rpnFormat(exprSanitized)
+            stack = []
 
-        if not tokenList:
-            return None
-
-        for t in tokenList:
-            if type(t) is not str:
-                stack.append(t)
-            elif t in operations:
-                if operations[t]["userDef"]:
-                    newExp = operations[t]["calc"]
-                    if operations[t]["args"] is not None:
-                        if len(stack) >= len(operations[t]["args"]):
-                            for arg in operations[t]["args"]:
-                                currVal = stack.pop()
-                                newExp = newExp.replace(arg, str(currVal))
-                        else:
-                            self.error = "insufficient number of arguments"
-                            return None
-                    result = np.double(self.solve(newExp))  # recursive step
-                    stack.append(result)
-                else:
-                    args = []
-
-                    if len(stack) >= operations[t]["args"]:
-
-                        for _ in range(0, operations[t]["args"], 1):
-                            args.append(stack.pop())
-                        try:
-                            result = operations[t]["calc"](args)
-                            stack.append(result)
-                        except Exception as e:
-                            self.error = str(e)
-                            return None
-                    else:
-                        self.error = "insufficient number of arguments"
-                        return None
-            else:
-                self.error = "Unrecognized symbol: "+str(t)
+            if not tokenList:
                 return None
 
-        res = self.converter.applyFormatting(stack.pop())  # last result in stack is final
+            for t in tokenList:
+                if type(t) is not str:
+                    stack.append(t)
+                elif t in operations:
+                    if operations[t]["userDef"]:
+                        newExp = operations[t]["calc"]
+                        if operations[t]["args"] is not None:
+                            if len(stack) >= len(operations[t]["args"]):
+                                for arg in operations[t]["args"]:
+                                    currVal = stack.pop()
+                                    newExp = newExp.replace(arg, str(currVal))
+                            else:
+                                raise ParseException("insufficient number of arguments")
 
-        if res is not None:
-            return str(res)
-        else:
-            self.error = self.converter.error
-            return None
+                        result = np.double(self.solve(newExp))  # recursive step
+                        stack.append(result)
+                    else:
+                        args = []
+
+                        if len(stack) >= operations[t]["args"]:
+
+                            for _ in range(0, operations[t]["args"], 1):
+                                args.append(stack.pop())
+
+                            result = operations[t]["calc"](args)
+                            stack.append(result)
+
+                        else:
+                            raise ParseException("insufficient number of arguments")
+                else:
+                    raise ParseException("Unrecognized symbol: "+str(t))
+
+            return str(self.converter.applyFormatting(stack.pop()))  # last result in stack is final
+
+        except ParseException:
+            raise
+        except ConvertionException:
+            raise
+        except ArithmeticError:
+            raise
+        except RecursionError:
+            raise
+
