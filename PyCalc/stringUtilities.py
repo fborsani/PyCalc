@@ -1,8 +1,9 @@
 import base64
-import zlib
 import binascii
-import quopri
 import locale
+import zlib
+
+import quopri
 
 listOfTextEncodings = (
     "locale",
@@ -149,4 +150,5 @@ def convert(strIn: str, codeIn: str, codeOut: str, opIn: str = "None", opOut: st
         strOut = str(bytesIn.hex())
     else:
         strOut = bytesIn.decode(vCodeOut, err)
+
     return bitOperations[opOut]["encode"](strOut)

@@ -2,18 +2,18 @@
 
 # Form implementation generated from reading ui file 'StringManager.ui'
 #
-# Created by: PyQt5 UI code generator 5.13.1
+# Created by: PyQt5 UI code generator 5.14.2
 #
 # WARNING! All changes made in this file will be lost!
 
 
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtCore, QtWidgets
 
 
 class Ui_StringManager(object):
     def setupUi(self, StringManager):
         StringManager.setObjectName("StringManager")
-        StringManager.resize(327, 511)
+        StringManager.resize(394, 605)
         StringManager.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.verticalLayout = QtWidgets.QVBoxLayout(StringManager)
         self.verticalLayout.setObjectName("verticalLayout")
@@ -47,8 +47,8 @@ class Ui_StringManager(object):
         self.TextIn = QtWidgets.QTextEdit(StringManager)
         self.TextIn.setObjectName("TextIn")
         self.verticalLayout.addWidget(self.TextIn)
-        self.horizontalLayout_8 = QtWidgets.QHBoxLayout()
-        self.horizontalLayout_8.setObjectName("horizontalLayout_8")
+        self.formLayout = QtWidgets.QFormLayout()
+        self.formLayout.setObjectName("formLayout")
         self.label_6 = QtWidgets.QLabel(StringManager)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
@@ -56,7 +56,7 @@ class Ui_StringManager(object):
         sizePolicy.setHeightForWidth(self.label_6.sizePolicy().hasHeightForWidth())
         self.label_6.setSizePolicy(sizePolicy)
         self.label_6.setObjectName("label_6")
-        self.horizontalLayout_8.addWidget(self.label_6)
+        self.formLayout.setWidget(0, QtWidgets.QFormLayout.LabelRole, self.label_6)
         self.FormatBoxInput = QtWidgets.QComboBox(StringManager)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -64,8 +64,14 @@ class Ui_StringManager(object):
         sizePolicy.setHeightForWidth(self.FormatBoxInput.sizePolicy().hasHeightForWidth())
         self.FormatBoxInput.setSizePolicy(sizePolicy)
         self.FormatBoxInput.setObjectName("FormatBoxInput")
-        self.horizontalLayout_8.addWidget(self.FormatBoxInput)
-        self.verticalLayout.addLayout(self.horizontalLayout_8)
+        self.formLayout.setWidget(0, QtWidgets.QFormLayout.FieldRole, self.FormatBoxInput)
+        self.label_7 = QtWidgets.QLabel(StringManager)
+        self.label_7.setObjectName("label_7")
+        self.formLayout.setWidget(1, QtWidgets.QFormLayout.LabelRole, self.label_7)
+        self.DecodeBox = QtWidgets.QComboBox(StringManager)
+        self.DecodeBox.setObjectName("DecodeBox")
+        self.formLayout.setWidget(1, QtWidgets.QFormLayout.FieldRole, self.DecodeBox)
+        self.verticalLayout.addLayout(self.formLayout)
         self.line = QtWidgets.QFrame(StringManager)
         self.line.setFrameShape(QtWidgets.QFrame.HLine)
         self.line.setFrameShadow(QtWidgets.QFrame.Sunken)
@@ -119,8 +125,8 @@ class Ui_StringManager(object):
         self.TextOut.setTextInteractionFlags(QtCore.Qt.TextSelectableByKeyboard|QtCore.Qt.TextSelectableByMouse)
         self.TextOut.setObjectName("TextOut")
         self.verticalLayout.addWidget(self.TextOut)
-        self.horizontalLayout_3 = QtWidgets.QHBoxLayout()
-        self.horizontalLayout_3.setObjectName("horizontalLayout_3")
+        self.formLayout_2 = QtWidgets.QFormLayout()
+        self.formLayout_2.setObjectName("formLayout_2")
         self.label_5 = QtWidgets.QLabel(StringManager)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
@@ -128,7 +134,7 @@ class Ui_StringManager(object):
         sizePolicy.setHeightForWidth(self.label_5.sizePolicy().hasHeightForWidth())
         self.label_5.setSizePolicy(sizePolicy)
         self.label_5.setObjectName("label_5")
-        self.horizontalLayout_3.addWidget(self.label_5)
+        self.formLayout_2.setWidget(0, QtWidgets.QFormLayout.LabelRole, self.label_5)
         self.FormatBoxOutput = QtWidgets.QComboBox(StringManager)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -136,8 +142,14 @@ class Ui_StringManager(object):
         sizePolicy.setHeightForWidth(self.FormatBoxOutput.sizePolicy().hasHeightForWidth())
         self.FormatBoxOutput.setSizePolicy(sizePolicy)
         self.FormatBoxOutput.setObjectName("FormatBoxOutput")
-        self.horizontalLayout_3.addWidget(self.FormatBoxOutput)
-        self.verticalLayout.addLayout(self.horizontalLayout_3)
+        self.formLayout_2.setWidget(0, QtWidgets.QFormLayout.FieldRole, self.FormatBoxOutput)
+        self.label_8 = QtWidgets.QLabel(StringManager)
+        self.label_8.setObjectName("label_8")
+        self.formLayout_2.setWidget(1, QtWidgets.QFormLayout.LabelRole, self.label_8)
+        self.EncodeBox = QtWidgets.QComboBox(StringManager)
+        self.EncodeBox.setObjectName("EncodeBox")
+        self.formLayout_2.setWidget(1, QtWidgets.QFormLayout.FieldRole, self.EncodeBox)
+        self.verticalLayout.addLayout(self.formLayout_2)
         self.horizontalLayout_7 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_7.setObjectName("horizontalLayout_7")
         spacerItem2 = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
@@ -164,6 +176,7 @@ class Ui_StringManager(object):
         self.label_3.setText(_translate("StringManager", "Path:"))
         self.FileButtonIn.setText(_translate("StringManager", "..."))
         self.label_6.setText(_translate("StringManager", "Input format:"))
+        self.label_7.setText(_translate("StringManager", "Decode from:"))
         self.label_2.setText(_translate("StringManager", "Output text"))
         self.CheckWriteToFile.setText(_translate("StringManager", "Write to file"))
         self.label_4.setText(_translate("StringManager", "Path:"))
@@ -171,4 +184,5 @@ class Ui_StringManager(object):
         self.OptOverwrite.setText(_translate("StringManager", "Overwrite"))
         self.OptAppend.setText(_translate("StringManager", "Append"))
         self.label_5.setText(_translate("StringManager", "Output format:"))
+        self.label_8.setText(_translate("StringManager", "Encode in:"))
         self.ConvertButton.setText(_translate("StringManager", "Convert"))

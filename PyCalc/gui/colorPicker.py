@@ -1,5 +1,6 @@
-from PyQt5 import QtCore, QtGui, QtWidgets
 import re
+
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 COLOR_RE = re.compile(r'(#[0-9a-fA-F]{3})([0-9a-fA-F]{3})?')
 COLOR_NAMES = QtGui.QColor.colorNames()
@@ -205,6 +206,9 @@ class QColorEdit(QtWidgets.QDialog):
         self.picky.setText("Pick from screen")
         self.previewPanel.setCheckable(True)
         self.previewPanel.setText("▶")
+        self.send = QtWidgets.QPushButton()
+        self.send.setText("Send to Calc") #connection is managed by MainWindow
+
         self.lineEdit = QColorLineEdit()
         if not useQColorDialog:
             self.spinColEdit = QColorSpinEdit(self)
@@ -240,6 +244,7 @@ class QColorEdit(QtWidgets.QDialog):
         layout.addWidget(self.lineEdit, 0, 0, 1, 1)
         layout.addWidget(self.picky, 0, 1, 1, 1)
         layout.addWidget(self.previewPanel, 0, 2, 1, 1)
+        layout.addWidget(self.send ,0 ,3 ,1 ,1)
         if not useQColorDialog:
             self._updatePreview(self.color)
         else:
@@ -329,6 +334,9 @@ class QColorEdit(QtWidgets.QDialog):
 
     def color(self):
         return self._color
+
+    def text(self):
+        return self.lineEdit.text()[1:] #strip "#"
 
     def setColor(self, color):
         self._color = color

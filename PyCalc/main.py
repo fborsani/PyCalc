@@ -1,18 +1,17 @@
 import os
 import sys
 
-from PyQt5.QtWidgets import *
+from PyQt5.QtWidgets import QFileDialog, QMainWindow, QDialog, QApplication
 
 import PyCalc.calculator as calc
 import PyCalc.formatModule as fm
 import PyCalc.stringUtilities as su
-from PyCalc.colorPicker import *
+from PyCalc.gui.colorPicker import *
 from PyCalc.gui.mainWindow import Ui_MainWindow
 from PyCalc.gui.stringManager import Ui_StringManager
 from PyCalc.gui.userFunction import Ui_AddFunctionForm
 
 STYLEDIR = "./styles/"
-
 
 dictMem = {
     "Integer": fm.DataType.INT,
@@ -36,7 +35,8 @@ dictBase = {
 }
 
 dictStyles = {}
-class MainWindow(QtWidgets.QMainWindow):
+
+class MainWindow(QMainWindow):
 
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
@@ -47,14 +47,29 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stringManager = StringManager(self)
         self.colorPicker = QColorEdit(parent=self)
         self.colorPicker.setWindowTitle("Picker")
+        self.colorPicker.send.pressed.connect(self.__setColor)
 
         self.ui.OKButton.clicked.connect(self.calc)
         self.ui.OldOperationsList.clicked.connect(self.fetchOldOperation)
-        self.ui.MenuAddFunction.triggered.connect(lambda: self.userFunctions.show())
-        self.ui.MenuCalcString.triggered.connect(lambda: self.stringManager.show())
-        self.ui.MenuColorPicker.triggered.connect(lambda: self.colorPicker.show())
+        self.ui.MenuAddFunction.triggered.connect(self.userFunctions.show)
+        self.ui.MenuCalcString.triggered.connect(self.stringManager.show)
+        self.ui.MenuColorPicker.triggered.connect(self.colorPicker.show)
 
         self.__initLists()
+
+    def __setColor(self):
+        """
+        keys and values of dict maintain their relative positions when turned into separated lists.
+        Corrispondence between keys index and QComboBox items index is guaranteed because the ComboBox items are
+        created by iterating on the dictionary keys list thus guaranteeing the items will always be in the same position
+        """
+
+        self.ui.TextInput.setText(self.colorPicker.text())
+        idxm = list(dictMem.values()).index(fm.DataType.DWORDO)
+        idxb = list(dictBase.values()).index(fm.NumBase.HEX)
+        self.ui.MemSizeSelector.setCurrentIndex(idxm)
+        self.ui.BaseInSelector.setCurrentIndex(idxb)
+        self.ui.CheckSigned.setChecked(True)
 
     def __initLists(self):
         for i in dictMem.keys():
@@ -120,7 +135,7 @@ class MainWindow(QtWidgets.QMainWindow):
         picked = self.ui.OldOperationsList.selectedItems()
         self.ui.TextInput.setText(picked[0].text())
 
-class UserFunctions(QtWidgets.QDialog):
+class UserFunctions(QDialog):
     def __init__(self, parent=None):
         super(UserFunctions, self).__init__(parent)
         self.ui = Ui_AddFunctionForm()
@@ -226,7 +241,7 @@ class UserFunctions(QtWidgets.QDialog):
         except Exception as e:
             self.reportError(str(e))
 
-class StringManager(QtWidgets.QDialog):
+class StringManager(QDialog):
     def __init__(self, parent=None):
         super(StringManager, self).__init__(parent)
         self.ui = Ui_StringManager()
@@ -234,7 +249,7 @@ class StringManager(QtWidgets.QDialog):
 
         self.ui.FrameIn.hide()
         self.ui.FrameOut.hide()
-        self.__initEncodingList()
+        self.__initLists()
 
         self.ui.CheckReadFromFile.clicked.connect(lambda: self.ui.FrameIn.setVisible(self.ui.CheckReadFromFile.isChecked()))
         self.ui.CheckWriteToFile.clicked.connect(lambda: self.ui.FrameOut.setVisible(self.ui.CheckWriteToFile.isChecked()))
@@ -248,10 +263,14 @@ class StringManager(QtWidgets.QDialog):
         self.pathIn = None
         self.pathOut = None
 
-    def __initEncodingList(self):
+    def __initLists(self):
         for i in range(0, len(su.listOfTextEncodings), 1):
             self.ui.FormatBoxInput.addItem(su.textEncodingBeautifier(i))
             self.ui.FormatBoxOutput.addItem(su.textEncodingBeautifier(i))
+
+        for key in su.bitOperations.keys():
+            self.ui.DecodeBox.addItem(key)
+            self.ui.EncodeBox.addItem(key)
 
     def __connectAndShowDialog(self, field):
         self.fileDialog.accepted.connect(lambda: self.__getSelectedFile(field))
@@ -297,11 +316,10 @@ class StringManager(QtWidgets.QDialog):
             self.ui.TextOut.setText(str(e))
 
 def main():
-    app = QtWidgets.QApplication(sys.argv)
+    app = QApplication(sys.argv)
     mainWindow = MainWindow()
     mainWindow.show()
     sys.exit(app.exec_())
-
 
 if __name__ == "__main__":
     main()
