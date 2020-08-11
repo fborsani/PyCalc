@@ -1,7 +1,5 @@
 import math
 from collections import deque
-
-import numpy as np
 from enum import Enum
 
 from PyCalc.formatModule import Converter, ConvertionException
@@ -156,7 +154,7 @@ class Calculator:
                             else:
                                 raise ParseException("insufficient number of arguments")
 
-                        result = np.double(self.solve(newExp))  # recursive step
+                        result = float(self.solve(newExp))  # recursive step
                         stack.append(result)
                     else:
                         args = []
@@ -184,4 +182,3 @@ class Calculator:
             raise
         except RecursionError:
             raise
-

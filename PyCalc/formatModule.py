@@ -1,7 +1,7 @@
+from enum import Enum
 from sys import byteorder
 
 from bitstring import BitArray, CreationError, InterpretError
-from enum import Enum
 
 
 class DataType(Enum):
@@ -276,4 +276,3 @@ class Converter:
             raise
         except InterpretError as e:
             raise ConvertionException("Use OCT mem size to convert to octal num format")
-

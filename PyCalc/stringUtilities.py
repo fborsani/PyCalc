@@ -1,9 +1,8 @@
 import base64
 import binascii
 import locale
-import zlib
-
 import quopri
+import zlib
 
 listOfTextEncodings = (
     "locale",

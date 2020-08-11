@@ -78,13 +78,15 @@ class MainWindow(QMainWindow):
         for i in dictBase.keys():
             self.ui.BaseInSelector.addItem(i)
             self.ui.BaseOutSelector.addItem(i)
-
-        for file in os.scandir(STYLEDIR):
-            if file.is_file() and file.name.endswith(".css"):
-                text = file.name[:file.name.rfind(".css")]
-                dictStyles[text] = file
-                action = self.ui.menuThemes.addAction(text)
-                action.triggered.connect(lambda: self.__applyStyle(action.text()))
+        try:
+            for file in os.scandir(STYLEDIR):
+                if file.is_file() and file.name.endswith(".css"):
+                    text = file.name[:file.name.rfind(".css")]
+                    dictStyles[text] = file
+                    action = self.ui.menuThemes.addAction(text)
+                    action.triggered.connect(lambda: self.__applyStyle(action.text()))
+        except FileNotFoundError as e:
+            print("WARNING: styles folder not found")
 
     def __applyStyle(self, name):
         with open(dictStyles[name], "r") as f:
@@ -320,6 +322,7 @@ def main():
     mainWindow = MainWindow()
     mainWindow.show()
     sys.exit(app.exec_())
+
 
 if __name__ == "__main__":
     main()
