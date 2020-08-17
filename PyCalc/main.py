@@ -305,12 +305,14 @@ class StringManager(QDialog):
         try:
             encodingIn = su.getEncoding(self.ui.FormatBoxInput.currentText())
             encodingOut = su.getEncoding(self.ui.FormatBoxOutput.currentText())
+            decodeOp = self.ui.DecodeBox.currentText()
+            encodeOp = self.ui.EncodeBox.currentText()
 
             if self.ui.CheckReadFromFile.isChecked():
                 self.readFile()
 
             text = self.ui.TextIn.toPlainText()
-            textOut = su.convert(text, encodingIn, encodingOut)
+            textOut = su.convert(text, encodingIn, encodingOut, decodeOp, encodeOp)
             self.ui.TextOut.setText(textOut)
             if self.ui.CheckWriteToFile.isChecked():
                 self.writeFile(self.ui.OptAppend.isChecked())

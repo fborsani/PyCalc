@@ -33,15 +33,15 @@ operations = {
     "cos": {"userDef": False, "pri": Priority.HIGH, "args": 1, "ltAssoc": False, "calc": lambda args: math.cos(args[0])},
     "tan": {"userDef": False, "pri": Priority.HIGH, "args": 1, "ltAssoc": False, "calc": lambda args: math.tan(args[0])},
     # --------bitwise op---------
-    "and": {"userDef": False, "pri": Priority.LOW, "args": 2, "ltAssoc": False, "calc": lambda args: args[1] & args[0]},
-    "or": {"userDef": False, "pri": Priority.LOW, "args": 2, "ltAssoc": False, "calc": lambda args: args[1] | args[0]},
-    "xor": {"userDef": False, "pri": Priority.LOW, "args": 2, "ltAssoc": False, "calc": lambda args: args[1] ^ args[0]},
-    "not": {"userDef": False, "pri": Priority.MED, "args": 1, "ltAssoc": False, "calc": lambda args: ~ args[0]},
-    "nand": {"userDef": False, "pri": Priority.LOW, "args": 2, "ltAssoc": False, "calc": lambda args: ~ (args[1] & args[0])},
-    "nor": {"userDef": False, "pri": Priority.LOW, "args": 2, "ltAssoc": False, "calc": lambda args: ~ (args[1] | args[0])},
-    "xnor": {"userDef": False, "pri": Priority.LOW, "args": 2, "ltAssoc": False, "calc": lambda args: ~ (args[1] ^ args[0])},
-    "lls": {"userDef": False, "pri": Priority.MED, "args": 2, "ltAssoc": False, "calc": lambda args: args[1] << args[0]},
-    "lrs": {"userDef": False, "pri": Priority.MED, "args": 2, "ltAssoc": False, "calc": lambda args: args[1] >> args[0]}
+    "and": {"userDef": False, "pri": Priority.LOW, "args": 2, "ltAssoc": False, "calc": lambda args: int(args[1]) & int(args[0])},
+    "or": {"userDef": False, "pri": Priority.LOW, "args": 2, "ltAssoc": False, "calc": lambda args: int(args[1]) | int(args[0])},
+    "xor": {"userDef": False, "pri": Priority.LOW, "args": 2, "ltAssoc": False, "calc": lambda args: int(args[1]) ^ int(args[0])},
+    "not": {"userDef": False, "pri": Priority.MED, "args": 1, "ltAssoc": False, "calc": lambda args: ~ int(args[0])},
+    "nand": {"userDef": False, "pri": Priority.LOW, "args": 2, "ltAssoc": False, "calc": lambda args: ~ (int(args[1]) & int(args[0]))},
+    "nor": {"userDef": False, "pri": Priority.LOW, "args": 2, "ltAssoc": False, "calc": lambda args: ~ (int(args[1]) | int(args[0]))},
+    "xnor": {"userDef": False, "pri": Priority.LOW, "args": 2, "ltAssoc": False, "calc": lambda args: ~ (int(args[1]) ^ int(args[0]))},
+    "lls": {"userDef": False, "pri": Priority.MED, "args": 2, "ltAssoc": False, "calc": lambda args: int(args[1]) << int(args[0])},
+    "lrs": {"userDef": False, "pri": Priority.MED, "args": 2, "ltAssoc": False, "calc": lambda args: int(args[1]) >> int(args[0])}
 }
 
 """
@@ -61,7 +61,7 @@ class Calculator:
     def __init__(self, converter: Converter):
         self.converter = converter
 
-    def addSpaces(self, expr):
+    def addSpaces(self, expr: str):
         items = []
         tmpString = ""
         for i in range(0, len(expr), 1):
@@ -88,7 +88,7 @@ class Calculator:
             items.append(tmpString)
         return items
 
-    def rpnFormat(self, expr):
+    def rpnFormat(self, expr: str, forceDecimal: bool = False):
         try:
             if expr == "":
                 raise ParseException("Empty string")
@@ -114,15 +114,17 @@ class Calculator:
                         raise ParseException("Mismatched brackets")
 
                     operators.pop()  # pop last open parenthesis
-                elif self.converter.isNum(t):
+                elif not forceDecimal and self.converter.isNum(t):
                     out = self.converter.toInt(t)
                     output.append(out)
+                elif forceDecimal and self.converter.isDecimal(t):
+                    output.append(float(t))
                 else:
                     raise ParseException("Symbol "+str(t)+" could not be resolved as operation or number")
 
             for i in range(-1, -len(operators) - 1, -1):
                 if operators[i] == '(':
-                    raise ParseException("Mismatched parenthesis")
+                    raise ParseException("Mismatched brackets")
                 output.append(operators[i])
 
             return output
@@ -131,48 +133,13 @@ class Calculator:
         except ConvertionException:
             raise
 
-    def solve(self, expr):
+    def solve(self, expr: str):
         try:
-            exprSanitized = expr.lower().strip()    # all chars are defaulted to lower case even ones in hex numbers
-            tokenList = self.rpnFormat(exprSanitized)
-            stack = []
+            exprSanitized = expr.lower().strip()  # all chars are defaulted to lower case even ones in hex numbers
+            tokenList = self.rpnFormat(exprSanitized, False)
 
-            if not tokenList:
-                return None
-
-            for t in tokenList:
-                if type(t) is not str:
-                    stack.append(t)
-                elif t in operations:
-                    if operations[t]["userDef"]:
-                        newExp = operations[t]["calc"]
-                        if operations[t]["args"] is not None:
-                            if len(stack) >= len(operations[t]["args"]):
-                                for arg in operations[t]["args"]:
-                                    currVal = stack.pop()
-                                    newExp = newExp.replace(arg, str(currVal))
-                            else:
-                                raise ParseException("insufficient number of arguments")
-
-                        result = float(self.solve(newExp))  # recursive step
-                        stack.append(result)
-                    else:
-                        args = []
-
-                        if len(stack) >= operations[t]["args"]:
-
-                            for _ in range(0, operations[t]["args"], 1):
-                                args.append(stack.pop())
-
-                            result = operations[t]["calc"](args)
-                            stack.append(result)
-
-                        else:
-                            raise ParseException("insufficient number of arguments")
-                else:
-                    raise ParseException("Unrecognized symbol: "+str(t))
-
-            return str(self.converter.applyFormatting(stack.pop()))  # last result in stack is final
+            result = self._solve(tokenList)
+            return str(self.converter.applyFormatting(result))
 
         except ParseException:
             raise
@@ -182,3 +149,46 @@ class Calculator:
             raise
         except RecursionError:
             raise
+
+    def _solve(self, tokenList: list):  # recursive function used to iterate on user defined functions
+        stack = []
+
+        if not tokenList:
+            return None
+
+        for t in tokenList:
+            if type(t) is not str:
+                stack.append(t)
+            elif t in operations:
+                if operations[t]["userDef"]:
+                    newExpr = operations[t]["calc"]
+
+                    if operations[t]["args"] is not None:
+                        if len(stack) >= len(operations[t]["args"]):
+                            for arg in operations[t]["args"]:
+                                currVal = stack.pop()
+                                newExpr = newExpr.replace(arg, str(currVal))
+                        else:
+                            raise ParseException("insufficient number of arguments")
+
+                    newExpr = newExpr.lower().strip()
+                    newTokenList = self.rpnFormat(newExpr, True)
+                    result = float(self._solve(newTokenList))  # recursive step
+                    stack.append(result)
+                else:
+                    args = []
+
+                    if len(stack) >= operations[t]["args"]:
+
+                        for _ in range(0, operations[t]["args"], 1):
+                            args.append(stack.pop())
+
+                        result = operations[t]["calc"](args)
+                        stack.append(result)
+
+                    else:
+                        raise ParseException("insufficient number of arguments")
+            else:
+                raise ParseException("Unrecognized symbol: "+str(t))
+
+        return str(stack.pop())  # last result in stack is final

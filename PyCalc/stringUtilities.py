@@ -6,7 +6,7 @@ import zlib
 
 listOfTextEncodings = (
     "locale",
-    "AoB",
+    # --found in python docs--
     "ascii",
     "big5",
     "big5hkscs",
@@ -109,6 +109,7 @@ listOfTextEncodings = (
 
 bitOperations = {
     "None": {"encode": lambda s: s, "decode": lambda s: s},
+    "AoB": {"encode": lambda s: binascii.hexlify(s), "decode": lambda s: binascii.b2a_hex(s)},
     "Ascii85": {"encode": lambda s: base64.a85encode(s), "decode": lambda s: base64.a85decode(s)},
     "Base16": {"encode": lambda s: base64.b16encode(s), "decode": lambda s: base64.b16decode(s)},
     "Base32": {"encode": lambda s: base64.b32encode(s), "decode": lambda s: base64.b32decode(s)},
@@ -119,17 +120,18 @@ bitOperations = {
     "U Encoding": {"encode": lambda s: binascii.b2a_uu(s), "decode": lambda s: binascii.a2b_uu(s)}
 }
 
+
 def textEncodingBeautifier(idx: int):
     strOut = listOfTextEncodings[idx].replace("_", " ")
     return strOut
+
 
 def getEncoding(string):
     label = string.replace(" ", "_")
     return label
 
-def convert(strIn: str, codeIn: str, codeOut: str, opIn: str = "None", opOut: str = "None", err: str = "replace"):
-    strIn = bitOperations[opIn]["decode"](strIn)
 
+def convert(strIn: str, codeIn: str, codeOut: str, opIn: str, opOut: str, err: str = "replace"):
     if codeIn == "locale":
         vCodeIn = locale.getlocale()[1]
     else:
@@ -140,14 +142,7 @@ def convert(strIn: str, codeIn: str, codeOut: str, opIn: str = "None", opOut: st
     else:
         vCodeOut = codeOut
 
-    if codeIn == "AoB":
-        bytesIn = bytearray.fromhex(strIn)
-    else:
-        bytesIn = strIn.encode(vCodeIn, err)
+    bytesIn = bitOperations[opIn]["decode"](strIn.encode(vCodeIn, errors=err))
 
-    if vCodeOut == "AoB":
-        strOut = str(bytesIn.hex())
-    else:
-        strOut = bytesIn.decode(vCodeOut, err)
-
-    return bitOperations[opOut]["encode"](strOut)
+    strOut = bytesIn.decode(vCodeIn, err)
+    return str(bitOperations[opOut]["encode"](bytes(strOut.encode(vCodeOut, errors=err))))

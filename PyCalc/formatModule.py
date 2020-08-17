@@ -91,12 +91,14 @@ def MStoC2(bArr, signed):
     return bArr
 
 def C2toMS(bArr, signed):
-    return C2toC1(bArr, signed)
+    sign = bArr.bin[0]
+    data = C2toC1(bArr, signed)
+    if sign == "1":
+        data.invert()
+    return BitArray(bin=sign+data.bin[1:])
 
 def MStoInt(bArr, signed):
     sign = bArr.bin[0]
-    if sign == "1":
-        bArr.invert()
     val = BitArray(bin=bArr.bin[1:]).uint
     if signed and sign == "1":
         return -val
@@ -115,7 +117,6 @@ class ConvertionException(Exception):
 
 class Converter:
     def __init__(self, baseIn, baseOut, binFormat, memSize, endianness, signed):
-        self.error = None
         self.mem = memSize
         self.baseIn = baseIn
         self.baseOut = baseOut
@@ -157,9 +158,16 @@ class Converter:
 
         return bArr
 
-    def isNum(self, string):
+    def isNum(self, string: str):
         for c in string:
             if c not in self.baseIn.value["chars"]:
+                return False
+        return True
+
+    @staticmethod
+    def isDecimal(string: str):
+        for c in string:
+            if c not in NumBase.DEC.value["chars"]:
                 return False
         return True
 
@@ -212,7 +220,7 @@ class Converter:
                 if binFormat == BinFormat.C1:
                     bArr = BitArray(strSign+self.mem.value["id"]+endian.value+":"+str(self.mem.value["size"])+"="+str(val))
                 else:
-                    bArr = BitArray(strSign+self.mem.value["id"]+":"+str(self.mem.value["size"] - 1)+"="+str(val))
+                    bArr = BitArray(strSign+self.mem.value["id"]+":"+str(self.mem.value["size"])+"="+str(val))
 
                 return self.binBaseSwitcher(bArr, BinFormat.C2, binFormat, endian, signed)
         except CreationError as e:
@@ -236,7 +244,6 @@ class Converter:
                 sign = binData[0]
                 binSize += 1
                 bArr = BitArray(bin=binData[1:])
-                bArr.invert()
 
                 binData = bArr.bin
 
@@ -262,7 +269,7 @@ class Converter:
 
     def applyFormatting(self, val):
         try:
-            bArr = self.getDecBitArray(val, self.endian, self.signed, self.binFormat)  # init with IN parameters
+            bArr = self.getDecBitArray(val, self.endian, self.signed, self.binFormat)
             if self.baseOut == NumBase.DEC:
                 return self.__toInt(bArr, self.endian, self.signed, self.binFormat)
             else:
@@ -275,4 +282,4 @@ class Converter:
         except ConvertionException as e:
             raise
         except InterpretError as e:
-            raise ConvertionException("Use OCT mem size to convert to octal num format")
+            raise ConvertionException(e.msg)
