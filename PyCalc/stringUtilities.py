@@ -1,6 +1,6 @@
 import base64
 import binascii
-import locale
+import sys
 import quopri
 import zlib
 
@@ -133,12 +133,12 @@ def getEncoding(string):
 
 def convert(strIn: str, codeIn: str, codeOut: str, opIn: str, opOut: str, err: str = "replace"):
     if codeIn == "locale":
-        vCodeIn = locale.getlocale()[1]
+        vCodeIn = sys.getdefaultencoding()
     else:
         vCodeIn = codeIn
 
     if codeOut == "locale":
-        vCodeOut = locale.getlocale()[1]
+        vCodeOut = sys.getdefaultencoding()
     else:
         vCodeOut = codeOut
 
