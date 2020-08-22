@@ -11,7 +11,7 @@ from PyCalc.gui.mainWindow import Ui_MainWindow
 from PyCalc.gui.stringManager import Ui_StringManager
 from PyCalc.gui.userFunction import Ui_AddFunctionForm
 
-STYLEDIR = "./styles/"
+STYLEDIR = __file__[:__file__.rfind("/")]+"/styles/"
 
 dictMem = {
     "Integer": fm.DataType.INT,
@@ -86,6 +86,7 @@ class MainWindow(QMainWindow):
                     action = self.ui.menuThemes.addAction(text)
                     action.triggered.connect(lambda: self.__applyStyle(action.text()))
         except FileNotFoundError as e:
+            print("my position: "+__file__[:__file__.rfind("/")])
             print("WARNING: styles folder not found")
 
     def __applyStyle(self, name):
